@@ -1,0 +1,22 @@
+logging.level.nl.um.cds: INFO
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:mydb
+    username: sa
+    password: password
+    driverClassName: org.h2.Driver
+  jpa:
+    spring.jpa.database-platform: org.hibernate.dialect.H2Dialect
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1
+
+task:
+  workdir: "triplifier-workdir"
+  propertiesFile: "triplifier.properties"
+  outputFile: "output.ttl"
+  ontologyFile: "output.owl"
+
+scheduling.poll-ms: 1000
