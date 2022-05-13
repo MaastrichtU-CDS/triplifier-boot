@@ -83,6 +83,7 @@ public class TaskService {
 
         String propertiesFilePath = taskProperties.getPropertiesFile();
 
+        String workdir = getTaskPath(identifier);
         String ontologyFilePath = getOntologyFile(identifier).getAbsolutePath();
         String outputFilePath = getOutputFile(identifier).getAbsolutePath();
 
@@ -102,6 +103,8 @@ public class TaskService {
         } catch (IOException e) {
             logger.error("Could not find properties file (" + propertiesFilePath + ", or specified using the -p argument).");
         }
+
+        props.setProperty("jdbc.url", "jdbc:relique:csv:" + workdir + "?fileExtension=.csv");
 
         OntologyFactory of = new OntologyFactory(props);
         if(baseUri != null) {

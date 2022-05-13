@@ -13,8 +13,8 @@ public class TaskProperties {
     private String propertiesFile = "triplifier.properties";
 
     private String workdir = "triplifier-workdir";
-    private String outputFile = "output.owl";
-    private String ontologyFile = "output.ttl";
+    private String outputFile = "output.ttl";
+    private String ontologyFile = "output.owl";
 
     boolean ontologyParsing = false;
     boolean dataParsing = true;

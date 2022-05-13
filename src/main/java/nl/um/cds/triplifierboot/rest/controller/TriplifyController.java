@@ -37,9 +37,9 @@ public class TriplifyController {
         return ResponseEntity.ok(task);
     }
 
-    @GetMapping("/task/{id}/output-file")
-    public ResponseEntity<Resource> getOutputFile(String taskId) throws IOException {
-        File file = taskService.getOntologyFile(taskId);
+    @GetMapping("/task/{identifier}/output-file")
+    public ResponseEntity<Resource> getOutputFile(@PathVariable String identifier) throws IOException {
+        File file = taskService.getOutputFile(identifier);
         InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
         return ResponseEntity.ok()
@@ -48,10 +48,10 @@ public class TriplifyController {
                 .body(resource);
     }
 
-    @GetMapping("/task/{id}/ontology-file")
-    public ResponseEntity<Resource> getOntologyFile(String taskId) throws IOException {
+    @GetMapping("/task/{identifier}/ontology-file")
+    public ResponseEntity<Resource> getOntologyFile(@PathVariable String identifier) throws IOException {
 
-        File file = taskService.getOntologyFile(taskId);
+        File file = taskService.getOntologyFile(identifier);
         InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
         return ResponseEntity.ok()
@@ -60,18 +60,19 @@ public class TriplifyController {
                 .body(resource);
     }
 
-    @GetMapping("/task/{id}/outputfile-file/exists")
-    public ResponseEntity<Boolean> getOutputFileExists(String taskId) throws IOException {
-        File f = taskService.getOutputFile(taskId);
+    @GetMapping("/task/{identifier}/output-file/exists")
+    public ResponseEntity<Boolean> getOutputFileExists(@PathVariable String identifier) {
+        File f = taskService.getOutputFile(identifier);
         boolean exists = f.exists() && !f.isDirectory();
         return ResponseEntity.ok(exists);
     }
 
-    @GetMapping("/task/{id}/ontology-file/exists")
-    public ResponseEntity<Boolean> getOntologyFileExists(String taskId) throws IOException {
-        File f = taskService.getOntologyFile(taskId);
+    @GetMapping("/task/{identifier}/ontology-file/exists")
+    public ResponseEntity<Boolean> getOntologyFileExists(@PathVariable String identifier) {
+        File f = taskService.getOntologyFile(identifier);
         boolean exists = f.exists() && !f.isDirectory();
         return ResponseEntity.ok(exists);
+
     }
 
 

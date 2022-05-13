@@ -15,7 +15,7 @@ spring:
 
 task:
   workdir: "triplifier-workdir"
-  propertiesFile: "triplifier.properties"
+  propertiesFile: "/Users/sanderputs/git/triplifier-boot/src/main/resources/triplifier.properties"
   outputFile: "output.ttl"
   ontologyFile: "output.owl"
 
