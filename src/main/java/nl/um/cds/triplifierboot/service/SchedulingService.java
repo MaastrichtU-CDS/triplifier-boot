@@ -9,14 +9,13 @@ import nl.um.cds.triplifierboot.config.TaskProperties;
 import nl.um.cds.triplifierboot.entity.TaskEntity;
 import nl.um.cds.triplifierboot.repository.TaskRepository;
 import org.apache.commons.io.FilenameUtils;
+import org.eclipse.rdf4j.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import org.eclipse.rdf4j.model.Statement;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,22 +26,22 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.*;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 @Service
 @EnableConfigurationProperties(TaskProperties.class)
-public class TaskService {
+public class SchedulingService {
 
-    private Logger logger = LoggerFactory.getLogger(TaskService.class);
+    private Logger logger = LoggerFactory.getLogger(SchedulingService.class);
 
     private TaskRepository taskRepository;
 
     private TaskProperties taskProperties;
 
-    public TaskService(TaskRepository taskRepository, TaskProperties taskProperties) {
+    public SchedulingService(TaskRepository taskRepository, TaskProperties taskProperties) {
         this.taskRepository = taskRepository;
         this.taskProperties = taskProperties;
     }
@@ -81,6 +80,8 @@ public class TaskService {
 
     @Async
     public void runTask(TaskEntity task){
+        task.setStatus(TaskEntity.Status.RUNNING);
+        taskRepository.save(task);
 
         String identifier = task.getId().toString();
         String propertiesFilePath = taskProperties.getPropertiesFile();
@@ -103,7 +104,10 @@ public class TaskService {
             FileInputStream fis = new FileInputStream(new File(propertiesFilePath));
             props.load(fis);
         } catch (IOException e) {
-            logger.error("Could not find properties file (" + propertiesFilePath + ", or specified using the -p argument).");
+            String msg = "Could not find properties file (" + propertiesFilePath + ", or specified using the -p argument).";
+            logger.error(msg);
+            task.setErrorMessage(msg.substring(0, 255));
+            task.setStatus(TaskEntity.Status.ERROR);
         }
 
         props.setProperty("jdbc.url", "jdbc:relique:csv:" + workdir + "?fileExtension=.csv");
@@ -148,9 +152,17 @@ public class TaskService {
         } catch (SQLException e) {
             logger.error("Could not connect to database with url " + props.getProperty("jdbc.url"));
             e.printStackTrace();
+            task.setErrorMessage(e.getMessage().substring(0, 255));
+            task.setStatus(TaskEntity.Status.ERROR);
         } catch (IOException e) {
             e.printStackTrace();
+            task.setErrorMessage(e.getMessage().substring(0, 255));
+            task.setStatus(TaskEntity.Status.ERROR);
         }
+        if(task.getStatus().equals(TaskEntity.Status.RUNNING)){
+            task.setStatus(TaskEntity.Status.COMPLETE);
+        }
+        taskRepository.save(task);
     }
 
     private void createOntology(DatabaseInspector dbInspect, OntologyFactory of, String ontologyOutputFilePath) throws SQLException {

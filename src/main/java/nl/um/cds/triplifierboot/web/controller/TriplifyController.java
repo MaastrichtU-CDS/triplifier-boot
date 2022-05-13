@@ -1,14 +1,10 @@
-package nl.um.cds.triplifierboot.rest.controller;
+package nl.um.cds.triplifierboot.web.controller;
 
-import nl.um.cds.triplifierboot.rest.controller.dto.TaskDto;
+import nl.um.cds.triplifierboot.entity.TaskEntity;
 import nl.um.cds.triplifierboot.service.TaskService;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,13 +26,13 @@ public class TriplifyController {
     }
 
     @PostMapping("/task")
-    public TaskDto newTask(@RequestBody TaskDto task) {
+    public TaskEntity newTask(@RequestBody TaskEntity task) {
         return taskService.save(task);
     }
 
     @PostMapping("/binary")
-    public ResponseEntity<TaskDto> createTask(@RequestParam("file") MultipartFile file) throws IOException {
-        TaskDto task = taskService.createTask(file);
+    public ResponseEntity<TaskEntity> createTask(@RequestParam("file") MultipartFile file) throws IOException {
+        TaskEntity task = taskService.createTask(file);
         return ResponseEntity.ok(task);
     }
 
