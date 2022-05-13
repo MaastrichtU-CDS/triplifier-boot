@@ -2,15 +2,18 @@ package nl.um.cds.triplifierboot.rest.controller;
 
 import nl.um.cds.triplifierboot.rest.controller.dto.TaskDto;
 import nl.um.cds.triplifierboot.service.TaskService;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 
 @RestController
@@ -38,27 +41,44 @@ public class TriplifyController {
     }
 
     @GetMapping("/task/{identifier}/output-file")
-    public ResponseEntity<Resource> getOutputFile(@PathVariable String identifier) throws IOException {
-        File file = taskService.getOutputFile(identifier);
-        InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+    public ResponseEntity<Void> getOutputFile(@PathVariable String identifier, HttpServletResponse response) throws IOException {
+        logger.info("GET request to download output-file for identifier={}", identifier);
 
-        return ResponseEntity.ok()
-                .contentLength(file.length())
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
+        File file = taskService.getOutputFile(identifier);
+        if (!file.exists()) {
+            logger.warn("Output file not found for identifier={}", identifier);
+            return ResponseEntity.notFound().build();
+        }
+
+        response.setContentType("application/x-download");
+        response.setHeader("Content-disposition", "attachment; filename=" + file.getName());
+
+        InputStream is = new FileInputStream(file);
+        IOUtils.copy(is, response.getOutputStream());
+        response.flushBuffer();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/task/{identifier}/ontology-file")
-    public ResponseEntity<Resource> getOntologyFile(@PathVariable String identifier) throws IOException {
+    public ResponseEntity<Void> getOntologyFile(@PathVariable String identifier, HttpServletResponse response) throws IOException {
+        logger.info("GET request to download ontology for identifier={}", identifier);
 
         File file = taskService.getOntologyFile(identifier);
-        InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+        if (!file.exists()) {
+            logger.warn("Ontology not found for indentifier={}", identifier);
+            return ResponseEntity.notFound().build();
+        }
 
-        return ResponseEntity.ok()
-                .contentLength(file.length())
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
+        response.setContentType("application/x-download");
+        response.setHeader("Content-disposition", "attachment; filename=" + file.getName());
+
+        InputStream is = new FileInputStream(file);
+        IOUtils.copy(is, response.getOutputStream());
+        response.flushBuffer();
+        return ResponseEntity.ok().build();
     }
+
+
 
     @GetMapping("/task/{identifier}/output-file/exists")
     public ResponseEntity<Boolean> getOutputFileExists(@PathVariable String identifier) {
