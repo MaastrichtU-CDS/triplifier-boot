@@ -20,6 +20,8 @@ import org.eclipse.rdf4j.model.Statement;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.PostConstruct;
+import javax.transaction.Transactional;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -47,12 +49,6 @@ public class TaskService {
         this.taskProperties = taskProperties;
     }
 
-
-    @Scheduled(fixedRateString ="${scheduling.poll-ms}", initialDelay=1000)
-    public void taskPoll() {
-//        logger.info("task poll");
-    }
-
     private String getTaskPath(String identifier){
         return taskProperties.getWorkdir() + "/" + identifier;
     }
@@ -75,12 +71,13 @@ public class TaskService {
         FileCopyUtils.copy(file.getInputStream(), new FileOutputStream(getTaskFilePath(identifier, file.getOriginalFilename())));
 
         taskRepository.save(task);
-        runTask(task);
         return task;
     }
 
-    @Async
+    @Transactional
     public void runTask(TaskEntity task){
+        task.setStatus(TaskEntity.Status.RUNNING);
+        taskRepository.save(task);
 
         String identifier = task.getId().toString();
         String propertiesFilePath = taskProperties.getPropertiesFile();
@@ -103,7 +100,10 @@ public class TaskService {
             FileInputStream fis = new FileInputStream(new File(propertiesFilePath));
             props.load(fis);
         } catch (IOException e) {
-            logger.error("Could not find properties file (" + propertiesFilePath + ", or specified using the -p argument).");
+            String msg = "Could not find properties file (" + propertiesFilePath + ", or specified using the -p argument).";
+            logger.error(msg);
+            task.setStatus(TaskEntity.Status.ERROR);
+            task.setErrorMessage(e.getMessage().substring(0, Math.min(255, msg.length())));
         }
 
         props.setProperty("jdbc.url", "jdbc:relique:csv:" + workdir + "?fileExtension=.csv");
@@ -148,12 +148,20 @@ public class TaskService {
         } catch (SQLException e) {
             logger.error("Could not connect to database with url " + props.getProperty("jdbc.url"));
             e.printStackTrace();
+            task.setStatus(TaskEntity.Status.ERROR);
+            task.setErrorMessage(e.getMessage().substring(0, Math.min(255, e.getMessage().length())));
         } catch (IOException e) {
             e.printStackTrace();
+            task.setStatus(TaskEntity.Status.ERROR);
+            task.setErrorMessage(e.getMessage().substring(0, Math.min(255, e.getMessage().length())));
         }
+        if(!task.getStatus().equals(TaskEntity.Status.ERROR)){
+            task.setStatus(TaskEntity.Status.COMPLETE);
+        }
+        taskRepository.saveAndFlush(task);
     }
 
-    private void createOntology(DatabaseInspector dbInspect, OntologyFactory of, String ontologyOutputFilePath) throws SQLException {
+    private void createOntology(DatabaseInspector dbInspect, OntologyFactory of, String ontologyOutputFilePath) throws SQLException, IOException {
         for(Map<String,String> tableName : dbInspect.getTableNames()) {
             logger.info("Table name: " + tableName);
             List<String> columns = dbInspect.getColumnNames(tableName.get("name"));
@@ -167,6 +175,7 @@ public class TaskService {
             of.exportData(ontologyOutputFilePath);
         } catch (IOException e) {
             e.printStackTrace();
+            throw e;
         }
     }
 
@@ -192,4 +201,20 @@ public class TaskService {
                 .forEach(File::delete);
     }
 
+    public TaskEntity getTaskEntity(String identifier) {
+        return taskRepository.getById(Long.valueOf(identifier));
+    }
+
+    @PostConstruct
+    public void deleteTasks() {
+        logger.info("Clean tasks in QUEUE");
+        taskRepository.deleteAll();
+
+        logger.info("Clean workdir={}", taskProperties.getWorkdir());
+        try {
+            cleanupDirectory(Paths.get(taskProperties.getWorkdir()));
+        } catch (IOException e) {
+            logger.error("Error cleaning workdir={}", taskProperties.getWorkdir(), e);
+        }
+    }
 }

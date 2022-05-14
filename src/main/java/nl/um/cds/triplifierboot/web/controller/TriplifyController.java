@@ -88,8 +88,22 @@ public class TriplifyController {
         File f = taskService.getOntologyFile(identifier);
         boolean exists = f.exists() && !f.isDirectory();
         return ResponseEntity.ok(exists);
-
     }
 
+    @GetMapping("/task/{identifier}/status")
+    public ResponseEntity<TaskEntity.Status> getTaskStatus(@PathVariable String identifier) {
+        TaskEntity task = taskService.getTaskEntity(identifier);
+        if (task == null) {
+            logger.warn("Task not found for indentifier={}", identifier);
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok().body(task.getStatus());
+    }
+
+    @DeleteMapping("/task/")
+    public ResponseEntity<?> deleteTasks() {
+        taskService.deleteTasks();
+        return ResponseEntity.ok().body("tasks deleted");
+    }
 
 }
