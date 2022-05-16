@@ -38,7 +38,7 @@ import java.util.Properties;
 @EnableConfigurationProperties(TaskProperties.class)
 public class TaskService {
 
-    private Logger logger = LoggerFactory.getLogger(TaskService.class);
+    private static Logger logger = LoggerFactory.getLogger(TaskService.class);
 
     private TaskRepository taskRepository;
 
@@ -195,8 +195,8 @@ public class TaskService {
     }
 
     public static void cleanupDirectory(Path dir) throws IOException {
+        logger.info("Clean dir={}", dir);
         Files.walk(dir)
-                .filter(Files::isRegularFile)
                 .map(Path::toFile)
                 .forEach(File::delete);
     }
@@ -212,6 +212,7 @@ public class TaskService {
 
         logger.info("Clean workdir={}", taskProperties.getWorkdir());
         try {
+            Files.createDirectories(Path.of(taskProperties.getWorkdir()));
             cleanupDirectory(Paths.get(taskProperties.getWorkdir()));
         } catch (IOException e) {
             logger.error("Error cleaning workdir={}", taskProperties.getWorkdir(), e);
