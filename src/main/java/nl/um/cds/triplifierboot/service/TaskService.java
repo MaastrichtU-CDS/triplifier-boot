@@ -48,7 +48,12 @@ public class TaskService {
     }
 
     private String getTaskPath(String identifier){
-        return taskProperties.getWorkdir() + "/" + identifier;
+        String taskPath = taskProperties.getWorkdir() + "/" + identifier;
+        File directory = new File(taskPath);
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+        return taskPath;
     }
 
     private String getTaskFilePath(String identifier, String filePath){
@@ -72,7 +77,7 @@ public class TaskService {
         return task;
     }
 
-    @Transactional
+//    @Transactional
     public void runTask(TaskEntity task){
         task.setStatus(TaskEntity.Status.RUNNING);
         taskRepository.save(task);
@@ -88,23 +93,16 @@ public class TaskService {
 
         String baseUri = null;
 
-        boolean clearDataGraph = taskProperties.isClearDataGraph();
-        boolean ontologyParsing = taskProperties.isOntologyParsing();
-        boolean dataParsing = taskProperties.isDataParsing();
-
-
-        try {
-            logger.debug(new File(propertiesFilePath).getAbsolutePath());
-            FileInputStream fis = new FileInputStream(new File(propertiesFilePath));
-            props.load(fis);
-        } catch (IOException e) {
-            String msg = "Could not find properties file (" + propertiesFilePath + ", or specified using the -p argument).";
-            logger.error(msg);
-            task.setStatus(TaskEntity.Status.ERROR);
-            task.setErrorMessage(e.getMessage().substring(0, Math.min(255, msg.length())));
-        }
-
         props.setProperty("jdbc.url", "jdbc:relique:csv:" + workdir + "?fileExtension=.csv");
+        props.setProperty("jdbc.user", "user");
+        props.setProperty("jdbc.password", "pass");
+        props.setProperty("jdbc.driver", "org.relique.jdbc.csv.CsvDriver");
+
+        props.setProperty("repo.type", "rdf4j");
+        props.setProperty("repo.url", "http://localhost:7200");
+        props.setProperty("repo.id", "epnd_dummy");
+        //props.setProperty("repo.user", "http://localhost:7200");
+        //props.setProperty("repo.pass", "http://localhost:7200");
 
         OntologyFactory of = new OntologyFactory(props);
         if(baseUri != null) {
@@ -113,36 +111,19 @@ public class TaskService {
         DataFactory df = new DataFactory(of, props);
         AnnotationFactory af = new AnnotationFactory(props);
 
-        if (clearDataGraph) {
-            List<Statement> ontologyStatements = of.getAllStatementsInContext();
-            List<Statement> annotationStatements = af.getAllStatementsInContext();
-            df.clearData(true);
-            if(!ontologyParsing) {
-                of.addStatements(ontologyStatements);
-            }
-            af.addStatements(annotationStatements);
-        }
-
         try {
-            if(ontologyParsing) {
-                logger.info("Start extracting ontology: " + System.currentTimeMillis());
-                DatabaseInspector dbInspect = new DatabaseInspector(props);
-                createOntology(dbInspect, of, ontologyFilePath);
-                logger.info("Done extracting ontology: " + System.currentTimeMillis());
-                logger.info("Ontology exported to " + ontologyFilePath);
-            }
+            logger.info("Start extracting ontology: " + System.currentTimeMillis());
+            DatabaseInspector dbInspect = new DatabaseInspector(props);
+            createOntology(dbInspect, of, ontologyFilePath);
+            logger.info("Done extracting ontology: " + System.currentTimeMillis());
+            logger.info("Ontology exported to " + ontologyFilePath);
 
-            if(dataParsing) {
-                logger.info("Start extracting data: " + System.currentTimeMillis());
-                df.convertData();
-                if ("memory".equals(props.getProperty("repo.type", "memory"))) {
-                    logger.info("Start exporting data file: " + System.currentTimeMillis());
-                    df.exportData(outputFilePath);
-                    logger.info("Data exported to " + outputFilePath);
-                }
-                logger.info("Done: " + System.currentTimeMillis());
-
-            }
+            logger.info("Start extracting data: " + System.currentTimeMillis());
+            df.convertData();
+            logger.info("Start exporting data file: " + System.currentTimeMillis());
+            df.exportData(outputFilePath);
+            logger.info("Data exported to " + outputFilePath);
+            logger.info("Done: " + System.currentTimeMillis());
         } catch (SQLException e) {
             logger.error("Could not connect to database with url " + props.getProperty("jdbc.url"));
             e.printStackTrace();
@@ -192,8 +173,9 @@ public class TaskService {
         return new File(path);
     }
 
-    public static void cleanupDirectory(Path dir) throws IOException {
-        logger.info("Clean dir={}", dir);
+    public static void deleteDir(Path dir) throws IOException {
+        logger.info("Delete dir={}", dir);
+        Files.createDirectories(dir);
         Files.walk(dir)
                 .map(Path::toFile)
                 .forEach(File::delete);
@@ -210,8 +192,8 @@ public class TaskService {
 
         logger.info("Clean workdir={}", taskProperties.getWorkdir());
         try {
+            deleteDir(Paths.get(taskProperties.getWorkdir()));
             Files.createDirectories(Path.of(taskProperties.getWorkdir()));
-            cleanupDirectory(Paths.get(taskProperties.getWorkdir()));
         } catch (IOException e) {
             logger.error("Error cleaning workdir={}", taskProperties.getWorkdir(), e);
         }
