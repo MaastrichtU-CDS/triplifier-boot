@@ -16,6 +16,34 @@ public class TaskProperties {
     private String outputFile = "output.ttl";
     private String ontologyFile = "output.owl";
 
+    private String sparqlType = "rdf4j";
+    private String sparqlUrl = "http://localhost:7200";
+    private String sparqlDb = "epnd_dummy";
+
+    public String getSparqlType() {
+        return sparqlType;
+    }
+
+    public void setSparqlType(String sparqlType) {
+        this.sparqlType = sparqlType;
+    }
+
+    public String getSparqlUrl() {
+        return sparqlUrl;
+    }
+
+    public void setSparqlUrl(String sparqlUrl) {
+        this.sparqlUrl = sparqlUrl;
+    }
+
+    public String getSparqlDb() {
+        return sparqlDb;
+    }
+
+    public void setSparqlDb(String sparqlDb) {
+        this.sparqlDb = sparqlDb;
+    }
+
     boolean ontologyParsing = false;
     boolean dataParsing = true;
     boolean clearDataGraph = false;

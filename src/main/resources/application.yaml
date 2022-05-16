@@ -18,5 +18,7 @@ task:
   propertiesFile: "/Users/sanderputs/git/triplifier-boot/src/main/resources/triplifier.properties"
   outputFile: "output.ttl"
   ontologyFile: "output.owl"
+  sparqlUrl: "http://localhost:7200"
+  sparqlDb: "epnd_dummy"
 
 scheduling.poll-ms: 1000
