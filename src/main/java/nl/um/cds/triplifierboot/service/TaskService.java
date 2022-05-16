@@ -103,7 +103,9 @@ public class TaskService {
             String msg = "Could not find properties file (" + propertiesFilePath + ", or specified using the -p argument).";
             logger.error(msg);
             task.setStatus(TaskEntity.Status.ERROR);
-            task.setErrorMessage(e.getMessage().substring(0, Math.min(255, msg.length())));
+            task.setErrorMessage(msg.substring(0, Math.min(255, msg.length())));
+            taskRepository.saveAndFlush(task);
+            return;
         }
 
         props.setProperty("jdbc.url", "jdbc:relique:csv:" + workdir + "?fileExtension=.csv");
