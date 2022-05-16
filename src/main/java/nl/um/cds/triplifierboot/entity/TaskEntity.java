@@ -2,6 +2,7 @@ package nl.um.cds.triplifierboot.entity;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.UUID;
 
 @Entity
 public class TaskEntity {
@@ -20,8 +21,8 @@ public class TaskEntity {
 
     private String errorMessage = "";
 
-    private @Id @GeneratedValue
-    Long id;
+    private @Id
+    UUID id = UUID.randomUUID();
 
     private String ontologyAndOrData;
 
@@ -57,11 +58,11 @@ public class TaskEntity {
         this.errorMessage = errorMessage;
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

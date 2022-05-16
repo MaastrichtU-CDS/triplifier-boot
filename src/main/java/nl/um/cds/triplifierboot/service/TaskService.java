@@ -31,6 +31,7 @@ import java.sql.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 
 @Service
 @EnableConfigurationProperties(TaskProperties.class)
@@ -91,23 +92,24 @@ public class TaskService {
 
         Properties props = new Properties();
 
-        String baseUri = null;
 
         props.setProperty("jdbc.url", "jdbc:relique:csv:" + workdir + "?fileExtension=.csv");
         props.setProperty("jdbc.user", "user");
         props.setProperty("jdbc.password", "pass");
         props.setProperty("jdbc.driver", "org.relique.jdbc.csv.CsvDriver");
 
-        props.setProperty("repo.type", "rdf4j");
-        props.setProperty("repo.url", "http://localhost:7200");
-        props.setProperty("repo.id", "epnd_dummy");
+        String ontologyUri = "http://ontology.local/" + task.getId().toString();
+        String dataUri = "http://data.local/" + task.getId().toString();
+
+        props.setProperty("repo.type", taskProperties.getSparqlType());
+        props.setProperty("repo.url", taskProperties.getSparqlUrl());
+        props.setProperty("repo.id", taskProperties.getSparqlDb());
+        props.setProperty("repo.ontologyUri", ontologyUri);
+        props.setProperty("repo.dataUri", dataUri);
         //props.setProperty("repo.user", "http://localhost:7200");
         //props.setProperty("repo.pass", "http://localhost:7200");
 
-        OntologyFactory of = new OntologyFactory(props);
-        if(baseUri != null) {
-            of = new OntologyFactory(baseUri, props);
-        }
+        OntologyFactory of = new OntologyFactory(ontologyUri + "/", props);
         DataFactory df = new DataFactory(of, props);
         AnnotationFactory af = new AnnotationFactory(props);
 
@@ -182,7 +184,7 @@ public class TaskService {
     }
 
     public TaskEntity getTaskEntity(String identifier) {
-        return taskRepository.getById(Long.valueOf(identifier));
+        return taskRepository.getById(UUID.fromString(identifier));
     }
 
     @PostConstruct
