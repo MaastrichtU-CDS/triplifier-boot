@@ -12,8 +12,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import org.eclipse.rdf4j.model.Statement;
@@ -64,9 +62,9 @@ public class TaskService {
         identifier = task.getId().toString();
 
         Path workDirTask = Paths.get(getTaskPath(identifier));
-        Files.createDirectories(workDirTask);
         logger.info("Clean workdir {}", workDirTask);
-        cleanupDirectory(workDirTask);
+        deleteDir(workDirTask);
+        Files.createDirectories(workDirTask);
 
         FileCopyUtils.copy(file.getInputStream(), new FileOutputStream(getTaskFilePath(identifier, file.getOriginalFilename())));
 
@@ -196,8 +194,9 @@ public class TaskService {
         return new File(path);
     }
 
-    public static void cleanupDirectory(Path dir) throws IOException {
-        logger.info("Clean dir={}", dir);
+    public static void deleteDir(Path dir) throws IOException {
+        logger.info("Delete dir={}", dir);
+        Files.createDirectories(dir);
         Files.walk(dir)
                 .map(Path::toFile)
                 .forEach(File::delete);
@@ -212,10 +211,10 @@ public class TaskService {
         logger.info("Clean tasks in QUEUE");
         taskRepository.deleteAll();
 
-        logger.info("Clean workdir={}", taskProperties.getWorkdir());
+        logger.info("Delete workdir={}", taskProperties.getWorkdir());
         try {
+            deleteDir(Paths.get(taskProperties.getWorkdir()));
             Files.createDirectories(Path.of(taskProperties.getWorkdir()));
-            cleanupDirectory(Paths.get(taskProperties.getWorkdir()));
         } catch (IOException e) {
             logger.error("Error cleaning workdir={}", taskProperties.getWorkdir(), e);
         }
