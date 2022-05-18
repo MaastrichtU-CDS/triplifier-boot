@@ -99,7 +99,7 @@ public class TaskService {
         props.setProperty("jdbc.driver", "org.relique.jdbc.csv.CsvDriver");
 
         String ontologyUri = "http://ontology.local/" + task.getId().toString();
-        String dataUri = "http://data.local/" + task.getId().toString();
+        String dataUri = "http://data.local/" + task.getId().toString() + "/";
 
         props.setProperty("repo.type", taskProperties.getSparqlType());
         props.setProperty("repo.url", taskProperties.getSparqlUrl());
